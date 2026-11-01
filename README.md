@@ -24,7 +24,7 @@ pip install -r requirements.txt
 python pc_demo.py
 ```
 
-检测 8 类行为：SafeDriving / Drowsy / PhoneUse / Drinking / ReachingBehind / OperatingRadio / Yawning / TurnAndLookBack。连续多帧确认防误检，疲劳状态按持续时间三级分级，触发中文横幅与语音预警。
+检测 8 类行为：Distracted / Drinking / Drowsy / Eating / PhoneUse / SafeDriving / Seatbelt / Smoking（类别名取自模型权重内嵌定义）。连续多帧确认防误检，疲劳状态按持续时间三级分级，触发中文横幅与语音预警。
 
 ## HDMI 采集卡收流
 

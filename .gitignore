@@ -5,3 +5,4 @@ runs/
 *_backup.py
 .venv/
 .env
+pick_demo_images.py
