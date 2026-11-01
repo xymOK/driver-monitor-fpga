@@ -58,7 +58,27 @@ cp names/coco80.names names/coco.names
 
 ⚠️ **类别名必须与模型对应**：names 文件只有一份且被两个模型共用，切换模型时必须同步切换 names，否则检测标签错误或越界崩溃（`basic_string::_M_create`）。
 
-⚠️ **待核对**：PC 端 8 类模型 `best_soham_yolo11n.pt` 内嵌类别为 `Distracted / Drinking / Drowsy / Eating / PhoneUse / SafeDriving / Seatbelt / Smoking`；板端 `coco8.names` 现内容为 `SafeDriving / Drowsy / PhoneUse / Drinking / ReachingBehind / OperatingRadio / Yawning / TurnAndLookBack`，两组不一致。若 `Yolo11s_ZG` 由 Soham 模型转换而来，`coco8.names` 应改为与 PC 端一致（待与转换源核对后修正）。
+**8 类定义（已核实，三方一致）**：GitHub 源仓库 Readme、权重 `best_soham_yolo11n.pt` 内嵌类别、`board_test_package/names/coco.names` 三处均为 Soham 8 类（索引 0~7）：
+
+```
+0 Distracted  1 Drinking  2 Drowsy  3 Eating
+4 PhoneUse    5 SafeDriving 6 Seatbelt 7 Smoking
+```
+
+⚠️ 板子上现存的 `coco8.names` 为旧值（SafeDriving/Drowsy/PhoneUse/Drinking/ReachingBehind/OperatingRadio/Yawning/TurnAndLookBack），**已确认错误**，按以下命令修正：
+
+```
+cat > names/coco8.names <<'EOF'
+Distracted
+Drinking
+Drowsy
+Eating
+PhoneUse
+SafeDriving
+Seatbelt
+Smoking
+EOF
+```
 
 ## 5. 实测性能（板端 NPU 推理，icore 字段）
 
