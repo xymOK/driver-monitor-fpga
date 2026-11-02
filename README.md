@@ -8,14 +8,29 @@
 ## 目录结构
 
 ```
-competition_code/
-├── pc_demo.py              PC 端实时检测主程序（含检测面板 UI）
-├── capture_viewer.py       HDMI 采集卡收流与录制工具（自动探测设备号）
-├── best_soham_yolo11n.pt   8 类驾驶员行为检测权重（YOLO11n）
-├── requirements.txt        Python 依赖
-├── pc_demo_README.txt      PC 端运行与参数说明
+driver-monitor-fpga/
+├── pc_side/                    PC 端实时检测与预警
+│   ├── pc_demo.py              实时检测主程序（含检测面板 UI）
+│   ├── capture_viewer.py       HDMI 采集卡收流与录制工具（自动探测设备号）
+│   ├── pc_demo_README.txt      PC 端运行与参数说明
+│   └── requirements.txt        Python 依赖
+├── board_side/                 板端部署
+│   ├── BOARD_SETUP.md          板端部署说明
+│   ├── README.md
+│   └── model/
+│       ├── README.md           模型说明（来源声明）
+│       └── best_soham_yolo11n.pt  8 类权重（YOLO11n 开源预训练模型）
 └── .gitignore
 ```
+
+## 模型来源
+
+检测模型为**开源预训练模型**（YOLO11n，8 类驾驶员行为），来自开源项目：
+
+- 来源仓库：[AlbatrossC/Driver-Monitoring-System](https://github.com/AlbatrossC/Driver-Monitoring-System)
+- 权重文件：`best_soham_yolo11n.pt`（8 类：Distracted / Drinking / Drowsy / Eating / PhoneUse / SafeDriving / Seatbelt / Smoking）
+
+本项目基于该开源权重完成 **TorchScript 导出 → Icraft INT8 量化 → 板端 NPU 部署**的端侧部署全链路（未对模型权重进行重新训练），使用遵守原仓库许可协议。
 
 ## PC 端运行
 

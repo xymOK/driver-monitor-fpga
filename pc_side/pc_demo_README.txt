@@ -2,7 +2,7 @@
 ================
 包含：
 - pc_demo.py        ：升级版演示脚本（时序确认 + 疲劳分级 + 玩手机/打电话区分 + 中文横幅 + 语音预警）
-- best_soham_yolo11n.pt ：模型（soham 训练的 YOLO11n，8 类驾驶员行为）
+- best_soham_yolo11n.pt ：模型（开源预训练模型，来源 AlbatrossC/Driver-Monitoring-System，YOLO11n，8 类驾驶员行为）
 
 运行环境：
 - Anaconda 环境 yolo（Python 3.10）
