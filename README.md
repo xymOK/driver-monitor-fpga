@@ -27,6 +27,7 @@
 ```
 driver-monitor-fpga-code/
 ├── README.md                   项目说明（本文件）
+├── .gitignore                  Git 忽略文件配置
 ├── pc_side/                    PC 端实时检测与预警
 │   ├── web_demo.py             FastAPI 网页版实时检测演示
 │   ├── pc_demo.py              实时检测主程序（含检测面板 UI）
@@ -38,7 +39,10 @@ driver-monitor-fpga-code/
     ├── BOARD_SETUP.md          板端部署详细说明
     ├── README.md
     └── model/
-        └── best_soham_yolo11n.pt  检测模型权重
+        ├── README.md           模型说明
+        ├── best_soham_yolo11n.pt  检测模型权重（PyTorch）
+        ├── Yolo11s_ZG.json    Icraft 量化模型配置
+        └── Yolo11s_ZG.raw     Icraft 量化模型权重
 ```
 
 ## 系统架构
