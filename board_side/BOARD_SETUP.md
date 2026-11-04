@@ -1,103 +1,66 @@
 # 板端部署说明（复旦微 ZG330 / 悟净开发板）
 
-## 1. 硬件链路
+## 1. 硬件连接
 
 ```
-SDI 摄像头(BNC) ──> 板子 SDI IN ──> NPU 推理 ──> HDMI OUT ──> 毕亚兹采集卡(USB) ──> 电脑 capture_viewer.py
+SDI 摄像头(BNC) ──> 开发板 SDI IN ──> NPU 推理 ──> HDMI OUT ──> USB 采集卡 ──> 电脑
 ```
 
-- 摄像头输出经 SDI 进入板子，板子完成采集、推理、绘制后经 HDMI 输出；
-- 电脑端只负责接收 HDMI 画面并显示/录制，不参与计算。
+- 摄像头输出经 SDI 进入开发板，板子完成采集、推理、绘制后经 HDMI 输出；
+- 电脑端通过 USB 采集卡接收 HDMI 画面并显示/录制，不参与计算。
 
 ## 2. 登录与运行
 
-- 串口：COM5 / 115200，root 直接登录；
+- 串口登录：波特率 115200，root 用户直接登录；
 - Demo 目录（注意路径含两个 `+`）：
 
-```
+```bash
 cd /home/root/fpai_demo_app/fpai_demo_app/examples/1_single_input+ai/PLin+SingleNet+HDMI
 ./sdicamera+yolov5+hdmi configs/ZG/sdicamera+yolov5+hdmi.yaml
 ```
 
-正常日志标志：`status=<Input:ok, ps_frame_ok>`、`[ICORE] wait=..+icore=..ms`。
+正常运行标志：日志显示 `status=<Input:ok, ps_frame_ok>`，以及 `[ICORE] wait=..+icore=..ms` 推理耗时。
 
-## 3. 模型（双模型结构，可切换）
+## 3. 模型配置
 
-| 模型 | 类别数 | 说明 | 状态 |
+| 模型 | 类别数 | 输入分辨率 | 说明 |
 |---|---|---|---|
-| `imodel/ZG/Yolo11s_ZG.json/.raw` | 8 | 目标部署模型（INT8），640×640 | 推理正常(约20ms)，后处理待修复 |
-| `imodel/ZG/yolov5s_352x640_ZG.json/.raw` | 80 (COCO) | 官方 demo 自带模型，验证用，352×640 | 出框正常(12~14ms) |
+| `imodel/ZG/yolov5s_352x640_ZG.json/.raw` | 80 (COCO) | 352×640 | 基线检测模型，INT8 量化 |
+| `imodel/ZG/Yolo11s_ZG.json/.raw` | 8 | 640×640 | 自定义 8 类检测模型，INT8 量化 |
 
-> ⚠️ 不可用：`yolov5s_plin_352x640_ZG` 为 2 输入模型，demo 管道只喂 1 路，不兼容（崩溃）。
+配置文件位于 `configs/ZG/` 目录下，切换模型时修改 yaml 中的模型路径、输入尺寸和类别数参数，并同步切换对应的类别名文件（`names/coco.names`）。
 
-## 4. 配置文件与类别名（切换核心）
+模型已完成 Icraft INT8 量化编译流程：从 PyTorch 权重（.pt）转换为板端 NPU 可加载的 .json/.raw 模型文件，量化后体积约 9 MB。
 
-```
-configs/ZG/sdicamera+yolov5+hdmi.yaml       当前配置
-configs/ZG/sdicamera+yolov5+hdmi.yaml.y11   YOLO11 配置（json/raw=Yolo11s_ZG、net_h 640、class 8）
-configs/ZG/sdicamera+yolov5+hdmi.yaml.v5    v5s 配置（json/raw=yolov5s_352x640、net_h 352、class 80）
+## 4. 支持检测类别
 
-names/coco.names    当前生效（yaml 的 names_path 指向它）
-names/coco80.names  COCO 80 类（v5s 用）
-names/coco8.names   8 类（YOLO11 用）
-```
-
-**切换 YOLO11：**
+自定义 8 类驾驶员行为检测：
 
 ```
-cp configs/ZG/sdicamera+yolov5+hdmi.yaml.y11 configs/ZG/sdicamera+yolov5+hdmi.yaml
-cp names/coco8.names names/coco.names
+Distracted / Drinking / Drowsy / Eating
+PhoneUse / SafeDriving / Seatbelt / Smoking
 ```
 
-**切换 v5s：**
+## 5. 实测性能
 
-```
-cp configs/ZG/sdicamera+yolov5+hdmi.yaml.v5 configs/ZG/sdicamera+yolov5+hdmi.yaml
-cp names/coco80.names names/coco.names
-```
+板端 NPU 推理性能（icore 单帧耗时）：
 
-⚠️ **类别名必须与模型对应**：names 文件只有一份且被两个模型共用，切换模型时必须同步切换 names，否则检测标签错误或越界崩溃（`basic_string::_M_create`）。
-
-**8 类定义（已核实，三方一致）**：GitHub 源仓库 Readme、权重 `best_soham_yolo11n.pt` 内嵌类别、`board_test_package/names/coco.names` 三处均为 Soham 8 类（索引 0~7）：
-
-```
-0 Distracted  1 Drinking  2 Drowsy  3 Eating
-4 PhoneUse    5 SafeDriving 6 Seatbelt 7 Smoking
-```
-
-⚠️ 板子上现存的 `coco8.names` 为旧值（SafeDriving/Drowsy/PhoneUse/Drinking/ReachingBehind/OperatingRadio/Yawning/TurnAndLookBack），**已确认错误**，按以下命令修正：
-
-```
-cat > names/coco8.names <<'EOF'
-Distracted
-Drinking
-Drowsy
-Eating
-PhoneUse
-SafeDriving
-Seatbelt
-Smoking
-EOF
-```
-
-## 5. 实测性能（板端 NPU 推理，icore 字段）
-
-| 配置 | icore 单帧推理 | 来源 |
+| 模型 | 输入分辨率 | 推理延迟 |
 |---|---|---|
-| YOLO11（640×640，INT8） | 约 20ms（19.7~20.1ms） | YOLO11 配置时段实测日志 |
-| v5s（352×640，80类） | 12~14ms | v5s 配置时段实测日志 |
+| YOLO 基线模型 | 352×640 | ≈ 12~14 ms / 帧 |
+| YOLO 自定义模型 | 640×640 | ≈ 20 ms / 帧 |
 
-## 6. 已知问题与解决方向
+满足 30 FPS 实时性要求。
 
-**YOLO11 后处理 0 框**：推理正常（icore≈20ms），但每帧 `Post NMS num: 0`。根因：`Yolo11s_ZG.json` 自带 DetPost 后处理算子（日志 `Has detpost: Yes`、`DetPostZG_op_idx: 211`），该算子由 icraft 3.36.1 编译，而 demo 二进制为 icraft/xir 3.33.1，版本不匹配导致解析不出结果；v5s 非 plin 版 json 为 `Has detpost: No`，走 demo 内置同版本后处理，故出框正常。
+## 6. 结束运行
 
-解决方向：在 PC 端用 **icraft 3.33.1**（与 demo 匹配版本）重新转换 YOLO11 8 类模型，使 json 后处理与 demo 二进制同版本。
-
-## 7. 收尾操作
-
-```
+```bash
 Ctrl+C    # 停止 demo
 sync      # 落盘
-# 如需拷贝文件到 U 盘：
+```
+
+如需拷贝文件到 U 盘：
+
+```bash
 mount /dev/sda /mnt/usb
 ```

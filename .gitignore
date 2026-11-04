@@ -1,8 +1,27 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+
+# Recordings & outputs
 recordings/
 runs/
-*_backup.py
-.venv/
-.env
-pick_demo_images.py
+*.mp4
+*.avi
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model large files (uncomment if needed)
+# *.pt
+# *.raw

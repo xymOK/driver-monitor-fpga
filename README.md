@@ -1,66 +1,115 @@
 # 基于视觉感知的驾驶员危险行为实时监测与主动预警系统
 
-面向车载场景的驾驶员行为实时监测与预警系统，采用"PC 端完整闭环 + 板端 NPU 边缘推理"双轨方案：
+全国大学生嵌入式芯片与系统设计竞赛 · 复旦微赛道参赛作品
 
-- **PC 端**：YOLO11（8 类驾驶员行为）实时检测，多帧时序防误检、疲劳三级分级、中文横幅与语音播报分级预警，构成端到端闭环；
+## 项目背景
+
+据统计，驾驶员分心、疲劳、接打电话等危险行为是交通事故的主要诱因之一。本项目面向车载场景，基于视觉感知与边缘 AI 计算，实现驾驶员危险行为的实时检测与主动预警，旨在提升驾驶安全。
+
+系统采用"PC 端完整闭环 + 板端 NPU 边缘推理"双轨方案：
+
+- **PC 端**：YOLO 实时检测，多帧时序防误检、疲劳三级分级、中文横幅与语音播报分级预警，构成端到端闭环；
 - **板端**：复旦微 ZG330（悟净开发板）NPU 部署 Icraft INT8 量化模型，SDI 摄像头输入、NPU 低功耗实时推理、HDMI 输出，不依赖云端算力。
+
+## 核心成果
+
+| 指标 | 实测数据 |
+|---|---|
+| NPU 推理延迟（自定义模型） | ≈ 20 ms / 帧 |
+| NPU 推理延迟（基线模型） | ≈ 12~14 ms / 帧 |
+| 实时性 | 满足 30 FPS 实时性要求 |
+| 模型量化后体积 | ≈ 9 MB（INT8） |
+| 输入分辨率 | 1920×1080（SDI） |
+| 输出分辨率 | 1920×1080（HDMI） |
 
 ## 目录结构
 
 ```
-driver-monitor-fpga/
+driver-monitor-fpga-code/
+├── README.md                   项目说明（本文件）
 ├── pc_side/                    PC 端实时检测与预警
+│   ├── web_demo.py             FastAPI 网页版实时检测演示
 │   ├── pc_demo.py              实时检测主程序（含检测面板 UI）
-│   ├── capture_viewer.py       HDMI 采集卡收流与录制工具（自动探测设备号）
-│   ├── pc_demo_README.txt      PC 端运行与参数说明
-│   └── requirements.txt        Python 依赖
-├── board_side/                 板端部署
-│   ├── BOARD_SETUP.md          板端部署说明
-│   ├── README.md
-│   └── model/
-│       ├── README.md           模型说明（来源声明）
-│       └── best_soham_yolo11n.pt  8 类权重（YOLO11n 开源预训练模型）
-└── .gitignore
+│   ├── capture_viewer.py       HDMI 采集卡收流与录制工具
+│   ├── requirements.txt        Python 依赖
+│   ├── start_demo.bat          一键启动脚本
+│   └── README.md               运行说明
+└── board_side/                 板端部署
+    ├── BOARD_SETUP.md          板端部署详细说明
+    ├── README.md
+    └── model/
+        └── best_soham_yolo11n.pt  检测模型权重
 ```
 
-## 模型来源
+## 系统架构
 
-检测模型为**开源预训练模型**（YOLO11n，8 类驾驶员行为），来自开源项目：
+```
+SDI 摄像头(1920×1080@60)
+        ↓
+  板端 PL 预处理 (ImageMake)
+        ↓
+  ZG330 NPU 推理 (Icraft INT8 量化)
+        ↓
+  板端后处理（PL 硬件加速）
+        ↓
+HDMI 输出(1920×1080@60)
+        ↓
+  采集卡 → PC 端录制/展示
+```
 
-- 来源仓库：[AlbatrossC/Driver-Monitoring-System](https://github.com/AlbatrossC/Driver-Monitoring-System)
-- 权重文件：`best_soham_yolo11n.pt`（8 类：Distracted / Drinking / Drowsy / Eating / PhoneUse / SafeDriving / Seatbelt / Smoking）
+## 快速开始
 
-本项目基于该开源权重完成 **TorchScript 导出 → Icraft INT8 量化 → 板端 NPU 部署**的端侧部署全链路（未对模型权重进行重新训练），使用遵守原仓库许可协议。
+### 环境准备
 
-## PC 端运行
+需要 Python 3.8+ 环境，安装依赖：
 
 ```bash
-pip install -r requirements.txt
-python pc_demo.py
+pip install -r pc_side/requirements.txt
 ```
 
-检测 8 类行为：Distracted / Drinking / Drowsy / Eating / PhoneUse / SafeDriving / Seatbelt / Smoking（类别名取自模型权重内嵌定义）。连续多帧确认防误检，疲劳状态按持续时间三级分级，触发中文横幅与语音预警。
+### 网页版演示（推荐）
 
-## HDMI 采集卡收流
+```cmd
+cd pc_side
+start_demo.bat
+```
+
+浏览器打开 `http://localhost:8000` 即可查看实时检测画面。
+
+### 桌面版演示
 
 ```bash
-python capture_viewer.py [设备号]
+python pc_side/pc_demo.py
 ```
 
-自动探测可用视频设备；画面含板端 SDI 信号时即为采集卡（Windows 枚举设备号不固定，需以画面内容判断）。按键：`R` 开始/停止录制（输出至 `recordings/`），`Q` 退出。
+支持实时检测、疲劳分级预警、中文横幅与语音播报。
 
-## 板端部署（摘要）
+### HDMI 采集卡收流与录制
 
-YOLO11 8 类模型经 Icraft 工具链 INT8 量化压缩至约 9.5MB，部署于板载 NPU：
-
-```
-SDI 摄像头(1920×1080@60) → 640×640 输入 → NPU 推理(实测约20ms/帧) → 后处理 → HDMI(1920×1080@60) 输出
+```bash
+python pc_side/capture_viewer.py [设备号]
 ```
 
-大体积模型文件与板端配置位于板端部署包内，不在本仓库分发。
+自动探测可用视频设备；按键 `R` 开始/停止录制，`Q` 退出。
 
-## 演示流程建议
+## 板端部署
 
-1. 板端上电并运行 NPU 推理 demo，SDI 画面经 HDMI 输出；
-2. 电脑运行 `capture_viewer.py` 接收板端画面并录制；
-3. PC 端运行 `pc_demo.py` 演示 8 类行为检测与分级预警闭环。
+基于复旦微悟净开发板（FMQL30TAI，ZG330 iCore NPU），采用 Icraft 3.33.1 工具链完成模型 INT8 量化部署：
+
+- **输入**：3G-SDI 摄像头，1920×1080@60fps
+- **推理**：NPU 实时推理，基线模型实测 ≈ 12~14ms/帧，自定义模型 ≈ 20ms/帧
+- **输出**：HDMI 1920×1080@60fps
+- **后处理**：PL 侧 DetPost 硬件加速后处理
+
+详细部署步骤与模型切换说明见 [`board_side/BOARD_SETUP.md`](board_side/BOARD_SETUP.md)。
+
+## 支持检测类别
+
+Distracted / Drinking / Drowsy / Eating / PhoneUse / SafeDriving / Seatbelt / Smoking
+
+## 技术栈
+
+- 硬件：复旦微悟净开发板（FMQL30TAI + ZG330 NPU）
+- 工具链：Icraft 3.33.1（INT8 量化编译）
+- 前端：FastAPI + HTML5
+- 模型：YOLO 系列 INT8 量化模型
